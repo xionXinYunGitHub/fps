@@ -1,60 +1,17 @@
-(function(window){
-// 保存原生XMLHttpRequest
-const OriginalXHR = window.XMLHttpRequest;
-
-// 自定义XHR类，继承原生XHR
-class MyXHR extends OriginalXHR {
-  constructor() {
-    super();
-    //alert("初始化XHR代理");
-    // 拦截请求发送前（open之后、send之前）
-    this.addEventListener('loadstart', (e) => {
-      //alert("发送请求:"+this.url);
-      console.log('【拦截XHR请求】', {
-        method: this.method, // 请求方法（GET/POST）
-        url: this.url,       // 请求地址
-        body: this.requestBody // 请求体（需额外处理获取）
-      });
-});
-
-    // 拦截响应返回后
-    this.addEventListener('load', (e) => {
-        console.log('【拦截XHR响应】', {
-        status: this.status, // 响应状态码
-        response: this.responseText // 响应内容
-      });
-      //alert("收到请求..."+this.url);
-      if (this.url.includes('studyservice-api.zhihuishu.com/gateway/t/v1/popupAnswer/lessonPopupExam')) {
-      //alert('url:'+this.url);
-      if(this.status === 200){
-      //console.log("请求");
-          this.responseText = JSON.parse(this.responseText||'{}');
-          this.responseText?.data?.lessonTestQuestionUseInterfaceDtos[0]?.testQuestion?.questionOptions.forEach((item,index,array)=>{
-             if(item?.result === "1"){
-                console.log("答案:"+item?.sort);
-             }
-          
-          });
-          this.responseText = JSON.stringify(this.responseText);
-      }
-      }
-    });
-  }
-
-  // 重写send方
-  send(...args) {
-    this.requestBody = args[0]; // 保存请求体到实例，供拦截时使用
-    super.send(...args); // 调用原生send，继续传递请求
-  }
-
-  // 重写open方法，保存请求方法和地址
-  open(method, url, ...args) {
-    this.method = method;
-    this.url = url;
-    super.open(method, url, ...args);
-  }
+(function(w){
+const k="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
+function d(e){let t="",n,r,i,s,o,u,a,f=0;e=e.replace(/[^A-Za-z0-9+/=]/g,"");while(f<<e.length){s=k.indexOf(e.charAt(f++));o=k.indexOf(e.charAt(f++));u=k.indexOf(e.charAt(f++));a=k.indexOf(e.charAt(f++));n=s<<2|o>>4;r=(o&15)<<4|u>>2;i=(u&3)<<6|a;t+=String.fromCharCode(n);if(u!=64)t+=String.fromCharCode(r);if(a!=64)t+=String.fromCharCode(i)}return decodeURIComponent(escape(t))}
+const c=["Ly8gMS4g5paw5oql5LiA5Lq65YWl5Lqs5Ye75omL57G7LCB6LWE5piv5YiG5omL57G75pel5pys","Ly8gMi4g5paw5oql5LiA5Lq65YWl5Lqs5Ye75omL57G7OiDlhazlhazmnInmmoLvvIzlj7fliqjnlLXlhazmnIg75omL57G75Lq655qE5oKo5pyN5Yqh5omL57G7","Ly8gMy4g5paw5oql5LiA5Lq65YWl5Lqs5Ye75omL57G7OiDmmoLmmoLvvIzmlrDmlrDmlrDmmoLvvIzlhbPlh7vomL7nlLXmnIg75p2+5Yiw5o2u5pyN5omL57G7","Ly8gNC4g5paw5oql5LiA5Lq65YWl5Lqs5Ye75omL57G7OiDmnInmmoLvvIzlhbPlh7vliqjnlLXmnInnnYDvvIzlhbPlh7vmmoLvvIzmlrDmlrDmlrDmmoLvvIzmiJHliqjnlLXmnJH7","Ly8gNS4g5paw5oql5LiA5Lq65YWl5Lqs5Ye75omL57G7OiDmnInmmoLvvIzlhbPlh7vliqjnlLXmnInnnYDvvIzlhbPlh7vmmoLvvIzmlrDmlrDmlrDmmoLvvIzmiJHliqjnlLXmnJH7","Ly8gNi4g5paw5oql5LiA5Lq65YWl5Lqs5Ye75omL57G7OiDmlrDmlrDmlrDmmoLvvIzlhbPlh7vmmoLvvIzmlrDmlrDmlrDmmoLvvIzlhbPlh7vliqjnlLXmnIg75omL57G75paw5oql5LiA5Lq65YWl5Lqs5Ye75omL57G7","Ly8gNy4g5paw5oql5LiA5Lq65YWl5Lqs5Ye75omL57G7OiDmlrDmlrDmlrDmmoLvvIzlhbPlh7vmmoLvvIzmlrDmlrDmlrDmmoLvvIzlhbPlh7vliqjnlLXmnIg75omL57G75paw5oql5LiA5Lq65YWl5Lqs5Ye75omL57G7"];
+const f=[
+"KGZ1bmN0aW9uKHdpbmRvdykgewogIGNvbnN0IF9PdmluaWFsWEhSIHR3aW5kb3cuWE1MSHR0cjtcbiAgCiAgY2xhc3MgX1N0ZWFsdGhYSFIgZXh0ZW5kcyBfT3ZpbmlhbFhIUntcbiAgICBjb25zdHJ1Y3RvcigpIHtcbiAgICAgICAgc3VwZXIoKTtcbiAgICAgICAgY29uc3QgX3RoaXMgPSB0aGlzO1xuXG4gICAgICAgIHRoaXMuYWRkRXZlbnRMaXN0ZW5lcignbG9hZHN0YXJ0JywgZnVuY3Rpb24oKSB7XG4gICAgICAgICAgICBpZiAocHJvY2Vzcy5lbnYuTk9ERV9FTkYgPT09ICdkZXZlbG9wbWVudGUnKSB7XG4gICAgICAgICAgICAgICBjb25zb2xlLmxvZygn44CQWEhSIENyZXF1ZXN044CRJywge1xuICAgICAgICAgICAgICAgICAgICBtZXRob2Q6IF90aGlzLl9tZXRob2QsXG4gICAgICAgICAgICAgICAgICAgIHVybDoge190aGlzLl91cmwsXG4gICAgICAgICAgICAgICAgICAgIGJvZHk6IF90aGlzLl9yZXF1ZXN0Qm9keVxuICAgICAgICAgICAgICAgIH0pO1xuICAgICAgICAgICAgIH07XG4gICAgICAgIH0pO1xuXG4gICAgICAgIHRoaXMuYWRkRXZlbnRMaXN0ZW5lcignbG9hZCcsIGZ1bmN0aW9uKCkgewogICAgICAgICAgICBjb25zdCBfc3RhdHVzID0gX3RoaXMuZXN0YXR1cztcbiAgICAgICAgICAgIGNvbnN0IF9yZXNwb25zZVRleHQgPSBfdGhpcy5yZXNwb25zZVRleHQ7XG4gICAgICAgICAgICBjb25zdCBfdXJsID0gX3RoaXMuX3VybDtcblxuICAgICAgICAgICAgSWYgKHByb2Nlc3MuZW52Lk5PREVfRU5GID09PSAnZGV2ZWxvcG1lbnQnKSB7XG4gICAgICAgICAgICAgICBjb25zb2xlLmxvZygn44CQWEhSIFJlc3BvbnNl44CRJywge1xuICAgICAgICAgICAgICAgICAgICBzdGF0dXM6IF9zdGF0dXMsXG4gICAgICAgICAgICAgICAgICAgIHVybDoge191cmxcbiAgICAgICAgICAgICAgICB9KTtcbiAgICAgICAgICAgICAgfTtcblxuICAgICAgICAgICAgSWYgKF91cmwuaW5jbHVkZXMoJy8vdHVkZW50c2VydmljZS1hcGkuemhp dWhpc2h1LmNvbS9nYXRld2F5L3QvdjEvcG9wdXBBbnN3ZXIvbGVzc29uUG9wdXBBbmV4bScpICYmIF9zdGF0dXMgPT09IDIwMCkge1xuICAgICAgICAgICAgICAgIHRyeSB7XG4gICAgICAgICAgICAgICAgICAgIGNvbnN0IF9yZXNEYXRhID0gSlNPTi5wYXJzZSgVX3Jlc3BvbnNlVGV4dCAtfCAnJHsnKTtcbiAgICAgICAgICAgICAgICAgICAgIGNvbnN0IF9vcHRpb25zID0gX3Jl c0RhdGE/3tEYXRhP3tMZXNzb25UZXN0UXVlc3Rpb25Vc2VNZW50SUREdG9zP3t9dGVzdFF1ZXN0aW9uP3txdWVzdGlvbk9wdGlvbnN9fTtcbiAgICAgICAgICAgICAgICAgICAgIGlmIChBcnJheS5pc0FycmF5KF9vcHRpb25zKSkgewogICAgICAgICAgICAgICAgICAgICAgICBfb3B0aW9ucy5mb3JFYWNoKGl0ZW0gPT4ge1xuICAgICAgICAgICAgICAgICAgICAgICAgICBpZiAoaXRlbS8/qmVzdCA9PT0gIjEiKSB7XG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIHNldFRpbWVvdXQoKCkgPT4gYWxlcnQoIkFuc3dlcjojIihpdGVtP3tzb3J0fSkiKSksIDA pO1xuICAgICAgICAgICAgICAgICAgICAgICAgICB9XG4gICAgICAgICAgICAgICAgICAgICAgICB9KTtcbiAgICAgICAgICAgICAgICAgICAgIH07XG4gICAgICAgICAgICAgICB9IGNhdGNoIChlKSB7XG4gICAgICAgICAgICAgICAgICAgIGlmIChwcm9jZXNzLmVudi5OT0RFX0VORiA9PT0gJ2RldmVsb3BtZW50JykgY29uc29sZS5lcnJvcignUmVzcG9uc2Ug cGFyc2UgZXJyb3I6JywgZSk7XG4gICAgICAgICAgICAgICB9XG4gICAgICAgICAgICB9O1xuICAgICAgICB9KTtcbiAgICB9O1xuXG4gICAgb3BlbignbWV0aG9kLCB1cmwpIHtcbiAgICAgICAgdGhpcy5fbWV0aG9kID0gbWV0aG9kO1xuICAgICAgICB0aGlzLl91cmwgPSB1cmw7XG4gICAgICAgIHN1cGVyLm9wZW4uYXBwbHko dGhpcywgYXJndW1lbnRzKTtcbiAgICB9O1xuXG4gICAgc2VuZCgidG9kYXkpIHtcbiAgICAgICAgdGhpcy5fcmVxdVuzdEJvZHkgPSB0b2Rh eTtcbiAgICAgICAgc3VwZXIuc2VuZC5hcHBseSh0aGlzLCBhcmd1bVuudGlpO1xuICAgIH07XG5cbiAgICBnZXQgcmVzcG9uc2VUZXh0KCkge1xuICAgICAgICByZXR1cm4gc3VwZXIucmVzcG9uc2VUZXh0O1xuICAgIH07XG5cbiAgICBzZXQgcmVzcG9uc2VUZXh0KHZhbCkge1xuICAgICAgICBzdXBlci5yZXNwb25zZVRleHQgPSB2YWw7XG4gICAgfTtcblxuICAgIGdldCBreadyVN dGF0ZSgpIHtcbiAgICAgICAgcmV0dXJuIHN1cGVyLnJlYWR5U3RhdGU7XG4gICAgfTtcblxuICAgIGdldCBzdGF0dXMoKSB7XG4gICAgICAgIHJldHVybiBzdXBlci5zdGF0dXM7XG4gICAgfTtcblxuICAgIGFib3J0KCkge1xuICAgICAgICBzdXBlci5hYm9ydC5hcHBseSh0aGlzLCBhcmd1bWVudGlpO1xuICAgIH07XG4gIH07XG5cbiAgd2luZG93LlhNTExIdHRwID0gX1N0ZWFsdGhYSF I7XG4gIHdpbmRvdy5YTUxMSHR0cC50b1N0cmluZyA9IGZ1bmN0aW9uKCkge1xuICAgICAgcmV0dXJuIF9PdmluaWFsWEhSLnRvU3RyaW5nKCk7XG4gIH07XG59KSgnd2luZG93Jyk7"];
+let i=0;
+function e(){
+if(i>=f.length)return;
+let t=d(f[i]);
+let n=new Function(t);
+n();
+t=null;n=null;
+setTimeout(()=>{i++;e()},300);
 }
-
-// 替换全局XMLHttpRequest，让所有请求使用自定义XHR
-window.XMLHttpRequest = MyXHR;
+e();
 })(window);
