@@ -1,3 +1,4 @@
+function btn(){
 // 1. 创建XHR对象
 const xhr = new XMLHttpRequest();
 
@@ -22,3 +23,4 @@ xhr.onerror = function() {
 
 // 5. 发送请求（GET请求send()内传null）
 xhr.send(null);
+}
