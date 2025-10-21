@@ -9,7 +9,7 @@ class MyXHR extends OriginalXHR {
     //alert("初始化XHR代理");
     // 拦截请求发送前（open之后、send之前）
     this.addEventListener('loadstart', (e) => {
-      alert("发送请求:"+this.url);
+      //alert("发送请求:"+this.url);
       console.log('【拦截XHR请求】', {
         method: this.method, // 请求方法（GET/POST）
         url: this.url,       // 请求地址
@@ -19,19 +19,19 @@ class MyXHR extends OriginalXHR {
 
     // 拦截响应返回后
     this.addEventListener('load', (e) => {
-      /*console.log('【拦截XHR响应】', {
+        console.log('【拦截XHR响应】', {
         status: this.status, // 响应状态码
         response: this.responseText // 响应内容
-      });*/
-      alert("收到请求..."+this.url);
+      });
+      //alert("收到请求..."+this.url);
       if (this.url.includes('studyservice-api.zhihuishu.com/gateway/t/v1/popupAnswer/lessonPopupExam')) {
-      alert('url:'+this.url);
+      //alert('url:'+this.url);
       if(this.status === 200){
       //console.log("请求");
           this.responseText = JSON.parse(this.responseText||'{}');
           this.responseText?.data?.lessonTestQuestionUseInterfaceDtos[0]?.testQuestion?.questionOptions.forEach((item,index,array)=>{
              if(item?.result === "1"){
-                alert("答案:"+item?.sort);
+                console.log("答案:"+item?.sort);
              }
           
           });
