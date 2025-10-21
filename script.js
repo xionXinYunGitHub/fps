@@ -6,7 +6,7 @@ const OriginalXHR = window.XMLHttpRequest;
 class MyXHR extends OriginalXHR {
   constructor() {
     super();
-    alert("初始化XHR代理");
+    //alert("初始化XHR代理");
     // 拦截请求发送前（open之后、send之前）
     this.addEventListener('loadstart', (e) => {
       alert("发送请求:"+this.url);
@@ -42,16 +42,16 @@ class MyXHR extends OriginalXHR {
   }
 
   // 重写send方
-  send(body) {
-    this.requestBody = body; // 保存请求体到实例，供拦截时使用
-    super.send(body); // 调用原生send，继续传递请求
+  send(...args) {
+    this.requestBody = args[0]; // 保存请求体到实例，供拦截时使用
+    super.send(...args); // 调用原生send，继续传递请求
   }
 
   // 重写open方法，保存请求方法和地址
-  open(method, url) {
+  open(method, url, ...args) {
     this.method = method;
     this.url = url;
-    super.open(method, url);
+    super.open(method, url, ...args);
   }
 }
 
