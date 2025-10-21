@@ -15,7 +15,7 @@ class MyXHR extends OriginalXHR {
         url: this.url,       // 请求地址
         body: this.requestBody // 请求体（需额外处理获取）
       });
-
+});
 
     // 拦截响应返回后
     this.addEventListener('load', (e) => {
