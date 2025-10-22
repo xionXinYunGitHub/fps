@@ -35,7 +35,10 @@ class MyXHR extends OriginalXHR {
   open(...args) {
     this.method = args[0];
     this.url = args[1];
-    console.log("【open】",{method:this.method,url:this.url});
+    console.log("【open】",{
+    method: this.method,
+    url: this.url
+    });
     super.open(...args);
   }
 }
