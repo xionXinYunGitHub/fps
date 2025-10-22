@@ -9,7 +9,7 @@ class MyXHR extends OriginalXHR {
         status: this.status,
         response: this.responseText
       });
-      if (this.url.includes('studyservice-api.zhihuishu.com/gateway/t/v1/popupAnswer/lessonPopupExam')) {
+      if (this.url&&this.url.includes('studyservice-api.zhihuishu.com/gateway/t/v1/popupAnswer/lessonPopupExam')) {
       if(this.status == 200){
           this.responseText = JSON.parse(this.responseText||'{}');
           this.responseText?.data?.lessonTestQuestionUseInterfaceDtos[0]?.testQuestion?.questionOptions.forEach((item,index,array)=>{
@@ -35,7 +35,7 @@ class MyXHR extends OriginalXHR {
   open(...args) {
     this.method = args[0];
     this.url = args[1];
-    console.log("【open】",{method:this.method,url:this.url})
+    console.log("【open】",{method:this.method,url:this.url});
     super.open(...args);
   }
 }
