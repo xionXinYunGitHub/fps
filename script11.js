@@ -25,17 +25,16 @@ class MyXHR extends OriginalXHR {
   }
   send(...args) {
     this.requestBody = args[0];
+    console.log('【拦截XHR请求】', {
+        method: this.method,
+        url: this.url,
+        body: this.requestBody
+      });
     super.send(...args);
   }
   open(...args) {
     this.method = args[0];
     this.url = args[1];
-    this.addEventListener('loadstart', (e) => {
-      console.log('【拦截XHR请求】', {
-        method: this.method,
-        url: this.url,
-        body: this.requestBody
-      });
 });
     super.open(...args);
   }
