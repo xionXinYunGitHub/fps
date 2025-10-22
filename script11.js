@@ -35,7 +35,6 @@ class MyXHR extends OriginalXHR {
   open(...args) {
     this.method = args[0];
     this.url = args[1];
-});
     super.open(...args);
   }
 }
