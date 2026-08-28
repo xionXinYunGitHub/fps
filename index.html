@@ -1,99 +1,408 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>嘎家内部加密工具</title>
-    <style>
-        * {box-sizing: border-box;margin:0;padding:0;font-family:system-ui,-apple-system}
-        body {max-width:720px;margin:16px auto;padding:0 12px;background:#f7f8fa;}
-        .box{background:#fff;padding:16px;border-radius:12px;margin:12px 0;box-shadow:0 1px 4px #00000015}
-        textarea{width:100%;min-height:120px;padding:10px;border:1px solid #ddd;border-radius:8px;font-size:15px;resize:vertical}
-        input[type="password"]{width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;font-size:15px;margin:8px 0}
-        button{padding:10px 18px;border:none;border-radius:8px;background:#2563eb;color:#fff;font-size:15px;margin:4px;cursor:pointer}
-        button:active{background:#1d4ed8}
-        .tip{font-size:13px;color:#666;margin:6px 0;line-height:1.5}
-    </style>
-<!-- Crypto‑JS 完整内联，离线可用，无需联网 -->
-<script>
-!function(e){var t=e.CryptoJS={},n=t.lib={},r=n.Base={extend:function(e){var t=this.prototype;return n.Base.create=function(){return t.init.apply(t,arguments)},n.Base.prototype=t,t.init=function(){this.$super&&(this.$super=Object.create(t.$super));this.init.apply(this,arguments)},t.init.prototype=t,e.extend(t,e)},create:function(){return this.init.apply(this,arguments)},init:function(){},mixIn:function(e){for(var t in e)this[t]=e[t];e.hasOwnProperty&&(this.hasOwnProperty=e.hasOwnProperty)},clone:function(){return this.init.call(Object.create(this))}};n.WordArray=r.extend({init:function(e,t){e=this.words=e||[];this.sigBytes=t!=null?t:4*e.length},toString:function(e){return(e||t.enc.Hex).stringify(this)},concat:function(e){var t=this.words,n=e.words,r=this.sigBytes;if(e.sigBytes){for(var i=0;i<e.sigBytes;i++){var s=(r+i)>>>2,o=t[s>>>2],u=e.words[i>>>2];o|=(u>>>24-8*(i&3))<<24-8*(i&3),t[s>>>2]=o}this.sigBytes+=e.sigBytes}else t.push.apply(t,n);return this},clamp:function(){var e=this.words,t=this.sigBytes;e[t>>>2]&=4294967295<<32-8*(t&3);for(var n=t>>>2+1;n<e.length;n++)e[n]=0},clone:function(){var e=r.clone.call(this);return e.words=this.words.slice(0),e}}),t.enc={},t.enc.Hex={stringify:function(e){for(var t=e.words,n=e.sigBytes,r=[],i=0;i<n;i++){var s=(t[i>>>2]>>>24-8*(i&3))&255;r.push((s>>>4).toString(16)),r.push((15&s).toString(16))}return r.join("")},parse:function(e){for(var t=e.length,n=[],r=0;r<t;r+=2)n[r>>>3]|=parseInt(e.substr(r,2),16)<<24-4*(r%8);return n.WordArray.init(n,t/2)}},t.enc.Utf8={stringify:function(e){return decodeURIComponent(escape(t.enc.Latin1.stringify(e)))},parse:function(e){return t.enc.Latin1.parse(unescape(encodeURIComponent(e)))}},t.enc.Latin1={stringify:function(e){for(var t=e.words,n=e.sigBytes,r=[],i=0;i<n;i++)r.push(String.fromCharCode((t[i>>>2]>>>24-8*(i&3))&255));return r.join("")},parse:function(e){for(var t=e.length,n=[],r=0;r<t;r++)n[r>>>2]|=e.charCodeAt(r)<<24-8*(r%4);return n.WordArray.init(n,t)}},n.BufferedBlockAlgorithm=r.extend({reset:function(){this._data=n.WordArray.init(),this._nDataBytes=0},_append:function(e){"string"==typeof e&&(e=t.enc.Utf8.parse(e)),this._data.concat(e),this._nDataBytes+=e.sigBytes},_process:function(e){var t=this._data,n=t.sigBytes,r=this.blockSize,i=r*4,s=n-i;if(e&&e>0&&s>e)i=e;var o=n<i?n:i,u=i/o;for(s=0;s<u;s++)this._processBlock(t.words,s*r);var a=t.clamp(),l=t.words.slice(i>>>2);return t.init(l,0),n-=i,this._nDataBytes-=i,a},process:function(e){return this._append(e),this._process()},finalize:function(e){e&&this._append(e);var t=this._process(!0);return this.reset(),t}}),n.Hasher=n.BufferedBlockAlgorithm.extend({cfg:n.Base.extend(),init:function(e){this.cfg=this.cfg.extend(e),this.reset()},reset:function(){n.BufferedBlockAlgorithm.reset.call(this),this._doReset()},update:function(e){return this.process(e),this},finalize:function(e){var t=this._hash.clone();return this._finalize(e),this.reset(),t}}),t.algo={},t.algo.PBKDF2=n.Base.extend({cfg:n.Base.extend({keySize:128/32,iterations:1000,hasher:t.algo.SHA1}),init:function(e){this.cfg=this.cfg.extend(e)},compute:function(e,t){for(var n=this.cfg,r=n.keySize,i=n.iterations,s=n.hasher.create(),o=n.WordArray.init([1]),u=[],a=0;a<r;){var l=s.update(t).finalize(e.concat(o));for(var f=l,p=1;p<i;p++)l=s.finalize(l),f.xor(l);u.push(f),a+=f.sigBytes,o.words[0]++}return n.WordArray.init(u.slice(0,r))}}),t.algo.CBC={encrypt:function(e,t,n){var r=n.iv;e=e.clone();for(var i=0;i<e.words.length;i+=t.blockSize){var s=n.WordArray.init(e.words.slice(i,i+t.blockSize));s.xor(r),t.encryptBlock(s.words,0),e.words.splice(i,t.blockSize,s.words[0],s.words[1],s.words[2],s.words[3]),r=s}return e},decrypt:function(e,t,n){var r=n.iv;e=e.clone();for(var i=0;i<e.words.length;i+=t.blockSize){var s=n.WordArray.init(e.words.slice(i,i+t.blockSize)),o=s.clone();t.decryptBlock(s.words,0),s.xor(r),e.words.splice(i,t.blockSize,s.words[0],s.words[1],s.words[2],s.words[3]),r=o}return e}},n.CipherParams=n.Base.extend({init:function(e){this.mixIn(e)},create:function(e){return n.CipherParams.init(e)}}),t.algo.BlockCipher=n.Base.extend({init:function(e){this.cfg=this.cfg.extend(e)},createEncryptor:function(e,t){return this.create({key:e,iv:t})},createDecryptor:function(e,t){return this.create({key:e,iv:t})}}),t.algo.AES=t.algo.BlockCipher.extend({blockSize:128/32,_doReset:function(){var e=this._key=this.cfg.key,n=e.words;for(this._keySize=e.sigBytes>>>2,this._rcon=[[1,0,0,0],[2,0,0,0],[4,0,0,0],[8,0,0,0],[16,0,0,0],[32,0,0,0],[64,0,0,0],[128,0,0,0],[27,0,0,0],[54,0,0,0]],this._keyExpansion=n.words.slice(0),this._numRounds;this._keyExpansion.length<(this._keySize+6)*4;){var t=this._keyExpansion.slice(-4);this._expandT(t),t[0]^=this._rcon[this._keyExpansion.length/4-this._keySize],this._keyExpansion.push(t[0],t[1],t[2],t[3]);for(var i=this._keyExpansion.length/4-this._keySize,j=0;j<4;j++)this._keyExpansion.push(this._keyExpansion[i*4+j]^this._keyExpansion[(i-1)*4+j])}this._numRounds=this._keySize+6},_expandT:function(e){var t=e[0];e[0]=e[1],e[1]=e[2],e[2]=e[3],e[3]=t;for(var n=0;n<4;n++){var r=e[n]>>>24;e[n]=this._SBOX[e[n]>>>24&255]<<24|this._SBOX[e[n]>>>16&255]<<16|this._SBOX[e[n]>>>8&255]<<8|this._SBOX[255&e[n]]}},encryptBlock:function(e,t){for(var n=this._keyExpansion,r=this._numRounds,i=0;i<4;i++)e[t+i]^=n[i];for(var s=1;s<r;s++){this._subBytes(e,t,!1),this._shiftRows(e,t,!1),this._mixColumns(e,t,!1);for(var o=0;o<4;o++)e[t+o]^=n[s*4+o]}this._subBytes(e,t,!1),this._shiftRows(e,t,!1);for(var u=0;u<4;u++)e[t+u]^=n[r*4+u]},decryptBlock:function(e,t){for(var n=this._keyExpansion,r=this._numRounds,i=r;i>0;i--){for(var s=0;s<4;s++)e[t+s]^=n[i*4+s];this._subBytes(e,t,!0),this._shiftRows(e,t,!0),i&&this._mixColumns(e,t,!0)}for(var o=0;o<4;o++)e[t+o]^=n[o]},_SBOX:[99,124,119,123,242,107,111,197,48,1,103,43,254,157,247,127,201,131,5,154,7,18,235,84,163,147,21,122,195,247,211,40,150,17,178,108,151,54,160,147,234,126,233,197,191,115,152,218,159,24,231,164,118,163,68,131,161,195,24,199,92,213,64,91,127,203,60,248,109,143,52,56,170,52,175,199,101,27,128,245,121,150,172,113,210,153,194,22,182,242,164,102,20,254,177,46,132,161,173,35,211,173,106,111,62,59,133,147,20,138,23,22,140,87,188,233,149,87,68,178,114,180,249,187,231,105,138,143,25,228,151,245,127,24,121,180,153,131,17,45,219,161,137,123,210,179,130,106,221,60,81,2,154,48,56,134,117,191,50,8,126,162,113,78,3,242,108,22,119,63,181,45,222,127,139,150,174,208,140,173,11,119,224,111,61,233,170,136,134,160,181,0,147,141,86,231,133,137,107,242,197,183,130,12,248,60,249,157,206,184,221,110,18,161,164,51,0,103,38,233,153,122,128,51,164,52,50,45,170,119,194,106,149,247,172,183,17,0,242,231,60,171,211,68,163,74,60,172,194,212,132,189,230,162,191,99,104,226,249,199,142,148,248,190,12,190,110,175,241,53,212,195,230,64,121,83,152,58,248,138,175,63,70,68,141,116,78,244,134,86,191,154,227,120,168,99,142,220,113,117,122,62,186,170,153,102,94,185,136,11,223,195,160,211,178,69,161,121,90,141,222,197,136,70,190,148,137,174,34,242,131,188,208,23,198,183,8,162,103,110,133,78,115,146,160,252,179,98,109,169,207,105,232,221,160,141,139,140,181,130,211,192,234,143,52,219,163,80,204,60,247,201,161,234,160,220,129,190,86,227,85,242,87,244,171,149,180,23,226,100,61,141,17,211,185,227,143,128,222,171,22,241,67,88,205,230,169,184,20,230,45,186,178,52,130,24,144,210,220,88,23,186,149,247,213,15,186,242,141,112,111,141,207,189,110,194,138,118,107,48,51,139,211,161,41,71,54,113,150,248,211,164,152,227,142,98,126,43,77,111,174,112,86,165,97,159,139,167,103,100,60,248,124,235,120,143,150,171,116,88,157,188,126,119,241,90,51,2,166,203,130,84,170,107,178,123,105,242,195,23,146,133,233,119,161,111,137,92,175,134,132,123,131,221,73,189,127,162,241,61,197,97,74,178,53,16,150,244,134,62,24,151,182,104,16,127,61,236],_invSBOX:[82,9,106,213,48,54,165,56,191,64,163,158,129,243,247,127,200,131,43,65,81,7,16,136,247,140,209,212,134,224,52,50,177,17,46,136,231,219,173,160,227,228,215,242,207,206,240,180,176,150,222,142,248,22,54,163,241,219,205,14,18,154,127,37,232,152,163,137,176,118,184,252,178,5,126,185,26,220,233,239,198,145,25,130,215,203,148,134,248,235,236,164,37,17,187,60,19,241,142,195,107,249,221,8,175,208,5,121,68,181,251,163,247,227,124,152,227,142,132,198,249,242,108,20,168,167,63,189,46,214,200,106,19,141,232,217,72,53,131,223,101,111,196,252,211,181,221,228,164,174,22,128,179,243,171,143,182,163,230,111,166,211,64,148,147,206,194,178,46,196,198,130,217,148,152,227,241,102,177,23,7,235,233,189,18,110,216,135,211,227,120,105,210,90,183,249,8,13,105,223,143,2,45,147,40,141,153,160,134,112,128,157,213,19,175,195,134,224,187,226,231,243,204,233,219,17,13,102,248,222,177,150,165,105,197,141,53,20,160,213,161,213,142,138,127,150,108,249,148,191,147,105,186,218,133,230,144,161,151,120,150,111,153,71,201,55,181,151,112,5,97,195,245,112,233,12,125,242,135,8,69,108,217,125,190,170,142,191,228,173,62,16,234,236,190,6,214,151,147,122,127,248,107,42,26,164,248,146,88,178,129,17,190,241,104,218,230,71,77,193,241,123,12,232,22,104,52,57,180,147,85,19,115,87,205,77,187,22,134,60,211,26,241,53,224,226,172,180,249,226,120,234,142,176,115,107,198,172,250,211,67,61}],_subBytes:function(e,t,n){for(var r=0;r<4;r++){var i=e[t+r];e[t+r]=n?this._invSBOX[i>>>24&255]<<24|this._invSBOX[i>>>16&255]<<16|this._invSBOX[i>>>8&255]<<8|this._invSBOX[255&i]:this._SBOX[i>>>24&255]<<24|this._SBOX[i>>>16&255]<<16|this._SBOX[i>>>8&255]<<8|this._SBOX[255&i]}},_shiftRows:function(e,t,n){for(var r=0;r<4;r++)for(var i=0;i<4;i++){var s=e[t+r+4*i];if(0==r)continue;var o=(i+(n?4-r:r))%4;e[t+r+4*i]=e[t+r+4*o],e[t+r+4*o]=s}},_mixColumns:function(e,t,n){for(var r=0;r<4;r++){var i=e[t+r],s=e[t+r+4],o=e[t+r+8],u=e[t+r+12];if(n){e[t+r]=this._mul(2,i)^this._mul(3,s)^o^u,e[t+r+4]=i^this._mul(2,s)^this._mul(3,o)^u,e[t+r+8]=i^s^this._mul(2,o)^this._mul(3,u),e[t+r+12]=this._mul(3,i)^s^o^this._mul(2,u)}else{e[t+r]=this._mul(14,i)^this._mul(11,s)^this._mul(13,o)^this._mul(9,u),e[t+r+4]=this._mul(9,i)^this._mul(14,s)^this._mul(11,o)^this._mul(13,u),e[t+r+8]=this._mul(13,i)^this._mul(9,s)^this._mul(14,o)^this._mul(11,u),e[t+r+12]=this._mul(11,i)^this._mul(13,s)^this._mul(9,o)^this._mul(14,u)}}},_mul:function(e,t){var n=0;for(var r=0;r<8;r++){if(1==(e&1))n^=t;var i=t>>>31;t=(t<<1)^(i*283),e>>>=1}return n}}),t.AES={encrypt:function(e,t){return t.algo=t.algo||t.algo.AES,t.mode=t.mode||t.mode.CBC,t.padding=t.padding||t.padding.PKCS7,n.CipherParams.create({ciphertext:t.algo.createEncryptor(t.key,t.iv).finalize(e),key:t.key,iv:t.iv,mode:t.mode,padding:t.padding})},decrypt:function(e,t){return t.algo=t.algo||t.algo.AES,t.mode=t.mode||t.mode.CBC,t.padding=t.padding||t.padding.PKCS7,n.CipherParams.create({ciphertext:t.algo.createDecryptor(t.key,t.iv).finalize(e.ciphertext),key:t.key,iv:t.iv,mode:t.mode,padding:t.padding})}},t.mode={},t.mode.CBC=t.algo.CBC,n.Padding=n.Base.extend(),t.padding={},t.padding.PKCS7={pad:function(e,t){var n=t-e.sigBytes%t;n=0===n?t:n;for(var r=0;r<n;r++)e.words.push(n<<24);e.sigBytes+=n},unpad:function(e){var t=255&e.words[e.sigBytes-1>>>24-8*(e.sigBytes-1&3)];e.sigBytes-=t}},t.lib.Cipher=n.BufferedBlockAlgorithm.extend({cfg:n.Base.extend({algorithm:null,mode:null,padding:null,iv:null}),init:function(e){this.cfg=this.cfg.extend(e),this._algorithm=this.cfg.algorithm.createEncryptor(this.cfg.key,this.cfg.iv),this._mode=this.cfg.mode,this._padding=this.cfg.padding,this.blockSize=this._algorithm.blockSize},_doReset:function(){},_processBlock:function(e,t){this._mode.encrypt(e,this._algorithm,{iv:this.cfg.iv})},finalize:function(e){var t=n.BufferedBlockAlgorithm.prototype.finalize.call(this,e);return this._padding.unpad(t),t}}),t.kdf={},t.kdf.PBKDF2=function(e,t,n,r,i){return t.algo=t.algo||t.algo.SHA1,t.iterations=t.iterations||1000,t.hasher=t.hasher||t.algo.SHA1,t.keySize=t.keySize||128/32,n.WordArray.init(t.algo.PBKDF2.compute(e,n.WordArray.init(t.salt),t).words.slice(0,t.keySize))},t.lib.PasswordBasedCipher=n.Base.extend({cfg:n.Base.extend({kdf:t.kdf.PBKDF2}),init:function(e){this.cfg=this.cfg.extend(e)},encrypt:function(e,t,n){var r=this.cfg.kdf.compute(n,{keySize:e.keySize,salt:e.salt,iterations:e.iterations,hasher:e.hasher});return e.iv&&(e.iv=r.iv),e.key=r.key,t.algo.encrypt(n.WordArray.init(e.ciphertext.words,e.ciphertext.sigBytes),e)},decrypt:function(e,t,n){var r=this.cfg.kdf.compute(n,{keySize:e.keySize,salt:e.salt,iterations:e.iterations,hasher:e.hasher});return e.iv&&(e.iv=r.iv),e.key=r.key,t.algo.decrypt(n.WordArray.init(e.ciphertext.words,e.ciphertext.sigBytes),e)}}),t.PasswordBasedCipher={encrypt:function(e,t,n){var r=t.algo||t.algo.AES,i=t.mode||t.mode.CBC,s=t.padding||t.padding.PKCS7,o=t.kdf||t.kdf.PBKDF2,u=t.iv,a=t.salt,l=t.iterations,f=t.hasher,p=n.WordArray.init;return o.compute(p,{keySize:r.blockSize,salt:a,iterations:l,hasher:f}),u&&(u=p.iv),r.createEncryptor(p.key,u).finalize(e)},decrypt:function(e,t,n){var r=t.algo||t.algo.AES,i=t.mode||t.mode.CBC,s=t.padding||t.padding.PKCS7,o=t.kdf||t.kdf.PBKDF2,u=t.iv,a=t.salt,l=t.iterations,f=t.hasher,p=n.WordArray.init;return o.compute(p,{keySize:r.blockSize,salt:a,iterations:l,hasher:f}),u&&(u=p.iv),r.createDecryptor(p.key,u).finalize(e)}},t.format={},t.format.OpenSSL={stringify:function(e){var t=e.ciphertext.toString(t.enc.Base64);return"Salted__"+e.salt.toString(t.enc.Hex)+t},parse:function(e){var t=t.enc.Base64.parse(e);return n.CipherParams.create({ciphertext:n.WordArray.init(t.words.slice(2),t.sigBytes-8),salt:n.WordArray.init([t.words[0]<<16|t.words[0]>>>16,t.words[1]<<16|t.words[1]>>>16],8)})}},t.enc.Base64={_map:"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=",stringify:function(e){for(var t=e.words,n=e.sigBytes,r=[],i=0;i<n;i+=3){var s=(t[i>>>2]>>>24-8*(i&3))&255,o=(t[i+1>>>2]>>>24-8*((i+1)&3))&255,u=(t[i+2>>>2]>>>24-8*((i+2)&3))&255;a=r.push(this._map.charAt(s>>>2)),r.push(this._map.charAt((3&s)<<4|o>>>4)),r.push(this._map.charAt((15&o)<<2|u>>>6)),r.push(this._map.charAt(63&u))}for(var l=e.sigBytes%3;l>0;l--)r[r.length-l]="=";return r.join("")},parse:function(e){e=e.replace(/\s/g,"");for(var t=e.length,n=[],r=0;r<t;r+=4){var i=this._map.indexOf(e.charAt(r)),s=this._map.indexOf(e.charAt(r+1)),o=this._map.indexOf(e.charAt(r+2)),u=this._map.indexOf(e.charAt(r+3));n[r*3/4]|=i<<18,n[r*3/4+1]|=s<<12,n[r*3/4+2]|=o<<6,n[r*3/4+3]|=u}return n.WordArray.init(n,3*t/4)}},t.algo.SHA1={_doReset:function(){this._hash=n.WordArray.init([1732584193,4023233417,2562383102,271733878,3285375206])},_processBlock:function(e,t){for(var n=this._hash.words,r=e.words,i=0;i<80;i++)this._W[i]=i<16?r[t+i]:this._W[i-3]^this._W[i-8]^this._W[i-14]^this._W[i-16]<<1|this._W[i-14]^this._W[i-8]^this._W[i-14]^this._W[i-16]>>>31;var s=n[0],o=n[1],u=n[2],a=n[3],l=n[4];for(i=0;i<80;i++){var f,p;if(i<20)f=o&u|~o&a,p=1518500249;else if(i<40)f=o^u^a,p=1859775393;else if(i<60)f=o&u|o&a|u&a,p=2400959708;else f=o^u^a,p=3395430485;var h=s<<5|s>>>27;l=h+f+l+p+this._W[i],s=o,o=u<<30|u>>>2,u=a,a=l}n[0]=n[0]+s|0,n[1]=n[1]+o|0,n[2]=n[2]+u|0,n[3]=n[3]+a|0,n[4]=n[4]+l|0},_W:new Array(80)}},t.SHA1=function(e,t){return t.algo=t.algo||t.algo.SHA1,n.Hasher.create(t).finalize(e)}}}(window);
-</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0f172a">
+<title>嘎家专用加密网页 · 网址加密/解密</title>
+<style>
+  :root{
+    --bg1:#0b1220; --bg2:#131c33; --card:rgba(255,255,255,.06);
+    --line:rgba(255,255,255,.12); --txt:#e8edf7; --sub:#9fb0cc;
+    --brand:#7c9cff; --brand2:#37e6c8; --ok:#2ecc71; --warn:#f6b93b; --danger:#ff6b81;
+    --shadow:0 18px 45px rgba(0,0,0,.35);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+    color:var(--txt); min-height:100vh;
+    background:
+      radial-gradient(1200px 600px at 80% -10%, rgba(124,156,255,.25), transparent 60%),
+      radial-gradient(900px 500px at -10% 10%, rgba(55,230,200,.18), transparent 55%),
+      linear-gradient(160deg, var(--bg1), var(--bg2));
+    background-attachment:fixed;
+    padding:env(safe-area-inset-top) 0 calc(20px + env(safe-area-inset-bottom));
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:560px;margin:0 auto;padding:22px 16px 60px;}
+
+  /* 顶部品牌 */
+  header{text-align:center;margin:10px 0 18px;}
+  .logo{
+    width:58px;height:58px;margin:0 auto 12px;border-radius:18px;
+    display:grid;place-items:center;font-size:26px;font-weight:800;
+    background:linear-gradient(135deg,var(--brand),var(--brand2));
+    color:#0b1220;box-shadow:var(--shadow);
+    letter-spacing:-1px;
+  }
+  header h1{font-size:21px;margin:0 0 4px;letter-spacing:.5px;}
+  header p{font-size:12.5px;color:var(--sub);margin:0;line-height:1.6;}
+
+  /* 卡片 */
+  .card{
+    background:var(--card);border:1px solid var(--line);
+    border-radius:20px;padding:18px;margin-bottom:16px;
+    backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+    box-shadow:var(--shadow);
+  }
+
+  /* Tabs */
+  .tabs{display:flex;background:rgba(0,0,0,.25);border-radius:14px;padding:4px;margin-bottom:16px;}
+  .tabs button{
+    flex:1;border:none;background:transparent;color:var(--sub);
+    padding:11px 0;font-size:14.5px;font-weight:600;border-radius:11px;transition:.25s;
+  }
+  .tabs button.on{background:linear-gradient(135deg,var(--brand),var(--brand2));color:#0b1220;box-shadow:0 6px 16px rgba(124,156,255,.4);}
+
+  .field{margin-bottom:14px;}
+  .field label{display:block;font-size:12.5px;color:var(--sub);margin-bottom:7px;font-weight:600;letter-spacing:.3px;}
+  textarea, input[type=password], input[type=text]{
+    width:100%;border:1px solid var(--line);border-radius:14px;
+    background:rgba(0,0,0,.28);color:var(--txt);font-size:14.5px;
+    padding:13px 14px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    line-height:1.5;outline:none;transition:.2s;
+  }
+  textarea{min-height:110px;resize:vertical;}
+  textarea:focus, input:focus{border-color:var(--brand);box-shadow:0 0 0 3px rgba(124,156,255,.18);}
+  textarea::placeholder, input::placeholder{color:rgba(159,176,204,.55);}
+
+  /* 密钥行 */
+  .pwd{position:relative;}
+  .pwd input{padding-right:52px;}
+  .eye{position:absolute;right:8px;top:50%;transform:translateY(-50%);
+    background:none;border:none;color:var(--sub);font-size:18px;padding:8px;}
+
+  /* 强度条 */
+  .strength{height:5px;border-radius:4px;background:rgba(255,255,255,.12);margin-top:9px;overflow:hidden;}
+  .strength i{display:block;height:100%;width:0;transition:.3s;border-radius:4px;}
+  .strength span{font-size:11.5px;color:var(--sub);margin-top:5px;display:block;}
+
+  /* 主按钮 */
+  .btn{
+    width:100%;border:none;border-radius:15px;padding:15px;font-size:16px;font-weight:700;
+    color:#0b1220;background:linear-gradient(135deg,var(--brand),var(--brand2));
+    box-shadow:0 10px 24px rgba(55,230,200,.3);transition:.2s;letter-spacing:.5px;
+  }
+  .btn:active{transform:scale(.98);}
+  .btn.ghost{background:rgba(255,255,255,.08);color:var(--txt);box-shadow:none;border:1px solid var(--line);}
+
+  .row2{display:flex;gap:10px;margin-top:12px;}
+  .row2 .btn{font-size:14.5px;padding:13px;}
+
+  /* 提示框 */
+  .tip{font-size:12px;color:var(--sub);line-height:1.7;background:rgba(124,156,255,.08);border:1px solid rgba(124,156,255,.25);border-radius:12px;padding:12px 14px;margin-top:14px;}
+  .tip b{color:var(--brand);}
+
+  /* 结果区 */
+  .result{position:relative;}
+  .result .tag{position:absolute;top:-10px;right:14px;font-size:10.5px;background:var(--brand);color:#0b1220;font-weight:700;padding:2px 9px;border-radius:8px;}
+
+  /* Toast */
+  #toast{
+    position:fixed;left:50%;bottom:34px;transform:translateX(-50%) translateY(20px);
+    background:rgba(15,23,42,.96);border:1px solid var(--line);color:#fff;
+    padding:11px 20px;border-radius:30px;font-size:13.5px;z-index:99;
+    opacity:0;pointer-events:none;transition:.3s;box-shadow:var(--shadow);
+  }
+  #toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+  #toast.err{border-color:var(--danger);color:#ffd7de;}
+  #toast.ok{border-color:var(--ok);color:#d8ffe7;}
+
+  .foot{text-align:center;font-size:11px;color:rgba(159,176,204,.6);margin-top:22px;line-height:1.7;}
+  .hidden{display:none;}
+</style>
 </head>
 <body>
-<div class="box">
-    <div class="tip">🔐 AES‑256‑CBC 对称加密解密，全部运算在本地浏览器，不上传数据<br>原理：<b>相同密钥，即可加密、解密</b></div>
-    <textarea id="content" placeholder="请输入明文，或者粘贴密文"></textarea>
-    <input type="password" id="secretKey" placeholder="输入密钥（密码，发给对方也要用这个密钥）">
-    <div>
-        <button onclick="encrypt()">🔒 加密</button>
-        <button onclick="decrypt()">🔓 解密</button>
-        <button onclick="copyOutput()">📋复制结果</button>
+<div class="wrap">
+  <header>
+    <div class="logo">嘎</div>
+    <h1>嘎家专用加密网页</h1>
+    <p>纯本地运行 · 加密 / 解密 网址 · 双方约定同一把密钥即可</p>
+  </header>
+
+  <div class="card">
+    <div class="tabs" role="tablist">
+      <button id="tabEnc" class="on" onclick="switchTab('enc')">🔒 加密网址</button>
+      <button id="tabDec" onclick="switchTab('dec')">🔓 解密网址</button>
     </div>
-    <div class="tip" id="msg"></div>
-    <textarea id="result" placeholder="输出结果在这里" readonly></textarea>
+
+    <!-- 加密面板 -->
+    <div id="panelEnc">
+      <div class="field">
+        <label>要加密的网址</label>
+        <textarea id="plain" placeholder="https://example.com/s/abc123?ref=gajia"></textarea>
+      </div>
+      <div class="field">
+        <label>密钥（双方约定好，务必一致）</label>
+        <div class="pwd">
+          <input type="password" id="keyEnc" placeholder="建议 12 位以上，含大小写+数字+符号">
+          <button class="eye" onclick="toggleEye('keyEnc')">👁️</button>
+        </div>
+        <div class="strength"><i id="bar"></i><span id="barTxt">密钥强度：尚未输入</span></div>
+      </div>
+      <button class="btn" onclick="doEncrypt()">加 密</button>
+      <div class="row2">
+        <button class="btn ghost" onclick="fillSample()">填入示例网址</button>
+        <button class="btn ghost" onclick="clearAll()">清空</button>
+      </div>
+    </div>
+
+    <!-- 解密面板 -->
+    <div id="panelDec" class="hidden">
+      <div class="field">
+        <label>收到的密文（整段粘贴）</label>
+        <textarea id="cipher" placeholder="v1$...一长串密文..."></textarea>
+      </div>
+      <div class="field">
+        <label>密钥（必须与加密方完全相同）</label>
+        <div class="pwd">
+          <input type="password" id="keyDec" placeholder="输入约定密钥">
+          <button class="eye" onclick="toggleEye('keyDec')">👁️</button>
+        </div>
+      </div>
+      <button class="btn" onclick="doDecrypt()">解 密</button>
+      <div class="row2">
+        <button class="btn ghost" onclick="pasteCipher()">从剪贴板粘贴</button>
+        <button class="btn ghost" onclick="clearAll()">清空</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 结果卡片 -->
+  <div class="card result hidden" id="resultCard">
+    <span class="tag" id="resultTag">结果</span>
+    <div class="field" style="margin-bottom:0">
+      <label id="resultLabel">加密结果</label>
+      <textarea id="result" readonly placeholder="结果将显示在这里"></textarea>
+    </div>
+    <button class="btn" style="margin-top:14px" onclick="copyResult()">⧉ 复制结果</button>
+    <button class="btn ghost" id="openLinkBtn" style="margin-top:10px;display:none" onclick="openLink()">🔗 打开此网址</button>
+  </div>
+
+  <div class="tip">
+    <b>使用方式：</b><br>
+    ① 发送方：填入网址 + 双方约定密钥 → 加密 → 把<b>整段密文</b>发给对方<br>
+    ② 接收方：粘贴密文 + <b>同一把密钥</b> → 解密 → 得到原始网址<br>
+    <b>说明：</b>全程在你的浏览器本地完成，不上传任何数据。密钥仅双方持有，请自行安全传递（见面/电话/加密聊天）。
+  </div>
+
+  <div class="foot">
+    · 嘎家专用 · 纯静态单文件 · 无需后端 ·<br>
+    算法：AES-256-GCM · PBKDF2-SHA256（10万次迭代）
+  </div>
 </div>
 
+<div id="toast"></div>
+
 <script>
-const msgBox = document.getElementById("msg");
-function showMsg(text){
-    msgBox.innerText = text;
+/* ============ 核心加密逻辑 ============ */
+const ENC = { name: "AES-GCM", length: 256 };
+const ITER  = 100000;      // PBKDF2 迭代次数
+const SALT  = 16;          // 随机盐字节数
+const IV    = 12;          // GCM 推荐 IV 长度
+const TAG   = 16;          // GCM 认证标签长度
+const VERSION = "v1";
+
+// 密钥派生：口令 -> AES-256 密钥
+async function deriveKey(passphrase, salt) {
+  const baseKey = await crypto.subtle.importKey(
+    "raw", new TextEncoder().encode(passphrase),
+    "PBKDF2", false, ["deriveKey"]
+  );
+  return crypto.subtle.deriveKey(
+    { name: "PBKDF2", salt: salt, iterations: ITER, hash: "SHA-256" },
+    baseKey, { name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"]
+  );
 }
 
-// 加密
-function encrypt(){
-    showMsg("");
-    const text = document.getElementById("content").value;
-    const key = document.getElementById("secretKey").value.trim();
-    if(!key){
-        showMsg("⚠️请填写密钥！");
-        return;
-    }
-    try{
-        // 使用OpenSSL兼容格式输出
-        const encrypted = CryptoJS.AES.encrypt(text, key).toString();
-        document.getElementById("result").value = encrypted;
-        showMsg("✅加密完成，把【密文】+【密钥】发给对方");
-    }catch(err){
-        showMsg("❌加密异常："+err.message);
-    }
+// 加密：明文 -> Base64(v1$salt$iv$ciphertext)
+async function encrypt(plaintext, passphrase) {
+  const salt = crypto.getRandomValues(new Uint8Array(SALT));
+  const iv   = crypto.getRandomValues(new Uint8Array(IV));
+  const key  = await deriveKey(passphrase, salt.buffer);
+  const ct   = await crypto.subtle.encrypt(
+    { name: "AES-GCM", iv: iv.buffer },
+    key, new TextEncoder().encode(plaintext)
+  );
+  // 组装：salt + iv + ciphertext(含tag)
+  const combined = new Uint8Array(SALT + IV + ct.byteLength);
+  combined.set(salt, 0);
+  combined.set(iv, SALT);
+  combined.set(new Uint8Array(ct), SALT + IV);
+  return VERSION + "$" + b64encode(combined);
 }
 
-// 解密
-function decrypt(){
-    showMsg("");
-    const cipherText = document.getElementById("content").value.trim();
-    const key = document.getElementById("secretKey").value.trim();
-    if(!key){
-        showMsg("⚠️请填写密钥！");
-        return;
-    }
-    try{
-        const bytes = CryptoJS.AES.decrypt(cipherText, key);
-        const plain = bytes.toString(CryptoJS.enc.Utf8);
-        if(!plain){
-            showMsg("❌解密失败！密钥错误 / 密文损坏");
-            document.getElementById("result").value = "";
-            return;
-        }
-        document.getElementById("result").value = plain;
-        showMsg("✅解密成功");
-    }catch(err){
-        showMsg("❌解密失败！密钥错误 / 密文损坏");
-        document.getElementById("result").value = "";
-    }
+// 解密：密文 -> 明文（校验版本与格式）
+async function decrypt(payload, passphrase) {
+  const parts = payload.trim().split("$");
+  if (parts.length !== 2 || parts[0] !== VERSION) {
+    throw new Error("密文格式无效，请检查是否复制完整（应以 v1$ 开头）");
+  }
+  const combined = b64decode(parts[1]);
+  if (combined.byteLength < SALT + IV + TAG) {
+    throw new Error("密文长度异常，可能已损坏或不完整");
+  }
+  const salt = combined.slice(0, SALT);
+  const iv   = combined.slice(SALT, SALT + IV);
+  const ct   = combined.slice(SALT + IV);
+  const key  = await deriveKey(passphrase, salt);
+  try {
+    const pt = await crypto.subtle.decrypt(
+      { name: "AES-GCM", iv: iv }, key, ct
+    );
+    return new TextDecoder().decode(pt);
+  } catch (e) {
+    throw new Error("解密失败：密钥错误或密文已被篡改");
+  }
 }
 
-// 复制输出框内容
-async function copyOutput(){
-    const out = document.getElementById("result").value;
-    if(!out) return;
-    try{
-        await navigator.clipboard.writeText(out);
-        showMsg("✅已复制到剪贴板");
-    }catch(e){
-        showMsg("复制失败，请手动选中复制");
-    }
+/* ============ Base64（URL安全） ============ */
+function b64encode(bytes){
+  let s = "";
+  for (const b of bytes) s += String.fromCharCode(b);
+  return btoa(s).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
 }
+function b64decode(str){
+  let s = str.replace(/-/g,"+").replace(/_/g,"/");
+  while (s.length % 4) s += "=";
+  const bin = atob(s);
+  const out = new Uint8Array(bin.length);
+  for (let i=0;i<bin.length;i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
+
+/* ============ 界面交互 ============ */
+function switchTab(mode){
+  document.getElementById("tabEnc").classList.toggle("on", mode==="enc");
+  document.getElementById("tabDec").classList.toggle("on", mode==="dec");
+  document.getElementById("panelEnc").classList.toggle("hidden", mode!=="enc");
+  document.getElementById("panelDec").classList.toggle("hidden", mode!=="dec");
+  hideResult();
+}
+
+function toggleEye(id){
+  const el = document.getElementById(id);
+  el.type = el.type === "password" ? "text" : "password";
+}
+
+// 密钥强度实时评估
+const keyInput = document.getElementById("keyEnc");
+keyInput.addEventListener("input", checkStrength);
+function checkStrength(){
+  const v = keyInput.value;
+  const bar = document.getElementById("bar");
+  const txt = document.getElementById("barTxt");
+  let score = 0;
+  if (v.length >= 8)  score++;
+  if (v.length >= 12) score++;
+  if (/[a-z]/.test(v) && /[A-Z]/.test(v)) score++;
+  if (/\d/.test(v)) score++;
+  if (/[^A-Za-z0-9]/.test(v)) score++;
+  const map = [
+    {w:0,  c:"transparent", t:"密钥强度：尚未输入"},
+    {w:20, c:"#ff6b81",     t:"很弱 · 至少 8 位"},
+    {w:40, c:"#f6b93b",     t:"一般 · 建议更长更杂"},
+    {w:65, c:"#f6b93b",     t:"中等"},
+    {w:85, c:"#2ecc71",     t:"较强"},
+    {w:100,c:"#2ecc71",     t:"很强 · 可以放心用"},
+  ];
+  const s = map[Math.min(score,5)];
+  bar.style.width = v.length ? s.w + "%" : "0%";
+  bar.style.background = s.c;
+  txt.textContent = s.t;
+}
+
+async function doEncrypt(){
+  const plain = document.getElementById("plain").value.trim();
+  const key   = document.getElementById("keyEnc").value;
+  if (!plain) return toast("请先输入要加密的网址","err");
+  if (!isValidUrl(plain)) return toast("请输入完整网址（含 http/https）","err");
+  if (key.length < 4) return toast("密钥至少 4 位，建议 12 位以上","err");
+  try {
+    const ct = await encrypt(plain, key);
+    showResult("加密结果（密文）", ct, "cipher");
+    toast("加密成功 ✔","ok");
+  } catch(e){ toast(e.message,"err"); }
+}
+
+async function doDecrypt(){
+  const cipher = document.getElementById("cipher").value.trim();
+  const key    = document.getElementById("keyDec").value;
+  if (!cipher) return toast("请粘贴密文","err");
+  if (!key)    return toast("请输入密钥","err");
+  try {
+    const pt = await decrypt(cipher, key);
+    showResult("解密结果（原始网址）", pt, "link");
+    toast("解密成功 ✔","ok");
+  } catch(e){ toast(e.message,"err"); }
+}
+
+function showResult(label, text, kind){
+  const card = document.getElementById("resultCard");
+  document.getElementById("resultLabel").textContent = label;
+  document.getElementById("result").value = text;
+  document.getElementById("resultTag").textContent = kind==="link" ? "网址" : "密文";
+  document.getElementById("openLinkBtn").style.display = kind==="link" ? "block" : "none";
+  card.classList.remove("hidden");
+  card.scrollIntoView({behavior:"smooth", block:"nearest"});
+}
+function hideResult(){
+  document.getElementById("resultCard").classList.add("hidden");
+}
+
+function copyResult(){
+  const v = document.getElementById("result").value;
+  if (!v) return;
+  navigator.clipboard.writeText(v).then(
+    () => toast("已复制到剪贴板 ✔","ok"),
+    () => { // 降级
+      const ta = document.getElementById("result");
+      ta.select(); document.execCommand("copy"); toast("已复制 ✔","ok");
+    }
+  );
+}
+
+function openLink(){
+  const v = document.getElementById("result").value.trim();
+  if (isValidUrl(v)) window.open(v, "_blank", "noopener");
+  else toast("解密结果不是有效网址","err");
+}
+
+function isValidUrl(s){
+  try { new URL(s); return /^https?:\/\//i.test(s); } catch { return false; }
+}
+
+function fillSample(){
+  document.getElementById("plain").value = "https://www.example.com/login?token=gajia-2026";
+  hideResult();
+}
+
+async function pasteCipher(){
+  try {
+    const t = await navigator.clipboard.readText();
+    document.getElementById("cipher").value = t;
+    toast("已从剪贴板粘贴","ok");
+  } catch { toast("无法读取剪贴板，请手动粘贴","err"); }
+}
+
+function clearAll(){
+  ["plain","cipher","result"].forEach(id => document.getElementById(id).value = "");
+  hideResult();
+}
+
+/* ============ Toast ============ */
+let toastTimer;
+function toast(msg, type){
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.className = (type||"") + " show";
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=> t.className = "", 2400);
+}
+
+// 初始化
+checkStrength();
 </script>
 </body>
 </html>
