@@ -1,32 +1,99 @@
-<!doctype html>
-<html>
+<!DOCTYPE html>
+<html lang="zh-CN">
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>七夕</title>
-    <link href="css/style.css" rel="stylesheet" type="text/css"/>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>嘎家内部加密工具</title>
+    <style>
+        * {box-sizing: border-box;margin:0;padding:0;font-family:system-ui,-apple-system}
+        body {max-width:720px;margin:16px auto;padding:0 12px;background:#f7f8fa;}
+        .box{background:#fff;padding:16px;border-radius:12px;margin:12px 0;box-shadow:0 1px 4px #00000015}
+        textarea{width:100%;min-height:120px;padding:10px;border:1px solid #ddd;border-radius:8px;font-size:15px;resize:vertical}
+        input[type="password"]{width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;font-size:15px;margin:8px 0}
+        button{padding:10px 18px;border:none;border-radius:8px;background:#2563eb;color:#fff;font-size:15px;margin:4px;cursor:pointer}
+        button:active{background:#1d4ed8}
+        .tip{font-size:13px;color:#666;margin:6px 0;line-height:1.5}
+    </style>
+<!-- Crypto‑JS 完整内联，离线可用，无需联网 -->
+<script>
+!function(e){var t=e.CryptoJS={},n=t.lib={},r=n.Base={extend:function(e){var t=this.prototype;return n.Base.create=function(){return t.init.apply(t,arguments)},n.Base.prototype=t,t.init=function(){this.$super&&(this.$super=Object.create(t.$super));this.init.apply(this,arguments)},t.init.prototype=t,e.extend(t,e)},create:function(){return this.init.apply(this,arguments)},init:function(){},mixIn:function(e){for(var t in e)this[t]=e[t];e.hasOwnProperty&&(this.hasOwnProperty=e.hasOwnProperty)},clone:function(){return this.init.call(Object.create(this))}};n.WordArray=r.extend({init:function(e,t){e=this.words=e||[];this.sigBytes=t!=null?t:4*e.length},toString:function(e){return(e||t.enc.Hex).stringify(this)},concat:function(e){var t=this.words,n=e.words,r=this.sigBytes;if(e.sigBytes){for(var i=0;i<e.sigBytes;i++){var s=(r+i)>>>2,o=t[s>>>2],u=e.words[i>>>2];o|=(u>>>24-8*(i&3))<<24-8*(i&3),t[s>>>2]=o}this.sigBytes+=e.sigBytes}else t.push.apply(t,n);return this},clamp:function(){var e=this.words,t=this.sigBytes;e[t>>>2]&=4294967295<<32-8*(t&3);for(var n=t>>>2+1;n<e.length;n++)e[n]=0},clone:function(){var e=r.clone.call(this);return e.words=this.words.slice(0),e}}),t.enc={},t.enc.Hex={stringify:function(e){for(var t=e.words,n=e.sigBytes,r=[],i=0;i<n;i++){var s=(t[i>>>2]>>>24-8*(i&3))&255;r.push((s>>>4).toString(16)),r.push((15&s).toString(16))}return r.join("")},parse:function(e){for(var t=e.length,n=[],r=0;r<t;r+=2)n[r>>>3]|=parseInt(e.substr(r,2),16)<<24-4*(r%8);return n.WordArray.init(n,t/2)}},t.enc.Utf8={stringify:function(e){return decodeURIComponent(escape(t.enc.Latin1.stringify(e)))},parse:function(e){return t.enc.Latin1.parse(unescape(encodeURIComponent(e)))}},t.enc.Latin1={stringify:function(e){for(var t=e.words,n=e.sigBytes,r=[],i=0;i<n;i++)r.push(String.fromCharCode((t[i>>>2]>>>24-8*(i&3))&255));return r.join("")},parse:function(e){for(var t=e.length,n=[],r=0;r<t;r++)n[r>>>2]|=e.charCodeAt(r)<<24-8*(r%4);return n.WordArray.init(n,t)}},n.BufferedBlockAlgorithm=r.extend({reset:function(){this._data=n.WordArray.init(),this._nDataBytes=0},_append:function(e){"string"==typeof e&&(e=t.enc.Utf8.parse(e)),this._data.concat(e),this._nDataBytes+=e.sigBytes},_process:function(e){var t=this._data,n=t.sigBytes,r=this.blockSize,i=r*4,s=n-i;if(e&&e>0&&s>e)i=e;var o=n<i?n:i,u=i/o;for(s=0;s<u;s++)this._processBlock(t.words,s*r);var a=t.clamp(),l=t.words.slice(i>>>2);return t.init(l,0),n-=i,this._nDataBytes-=i,a},process:function(e){return this._append(e),this._process()},finalize:function(e){e&&this._append(e);var t=this._process(!0);return this.reset(),t}}),n.Hasher=n.BufferedBlockAlgorithm.extend({cfg:n.Base.extend(),init:function(e){this.cfg=this.cfg.extend(e),this.reset()},reset:function(){n.BufferedBlockAlgorithm.reset.call(this),this._doReset()},update:function(e){return this.process(e),this},finalize:function(e){var t=this._hash.clone();return this._finalize(e),this.reset(),t}}),t.algo={},t.algo.PBKDF2=n.Base.extend({cfg:n.Base.extend({keySize:128/32,iterations:1000,hasher:t.algo.SHA1}),init:function(e){this.cfg=this.cfg.extend(e)},compute:function(e,t){for(var n=this.cfg,r=n.keySize,i=n.iterations,s=n.hasher.create(),o=n.WordArray.init([1]),u=[],a=0;a<r;){var l=s.update(t).finalize(e.concat(o));for(var f=l,p=1;p<i;p++)l=s.finalize(l),f.xor(l);u.push(f),a+=f.sigBytes,o.words[0]++}return n.WordArray.init(u.slice(0,r))}}),t.algo.CBC={encrypt:function(e,t,n){var r=n.iv;e=e.clone();for(var i=0;i<e.words.length;i+=t.blockSize){var s=n.WordArray.init(e.words.slice(i,i+t.blockSize));s.xor(r),t.encryptBlock(s.words,0),e.words.splice(i,t.blockSize,s.words[0],s.words[1],s.words[2],s.words[3]),r=s}return e},decrypt:function(e,t,n){var r=n.iv;e=e.clone();for(var i=0;i<e.words.length;i+=t.blockSize){var s=n.WordArray.init(e.words.slice(i,i+t.blockSize)),o=s.clone();t.decryptBlock(s.words,0),s.xor(r),e.words.splice(i,t.blockSize,s.words[0],s.words[1],s.words[2],s.words[3]),r=o}return e}},n.CipherParams=n.Base.extend({init:function(e){this.mixIn(e)},create:function(e){return n.CipherParams.init(e)}}),t.algo.BlockCipher=n.Base.extend({init:function(e){this.cfg=this.cfg.extend(e)},createEncryptor:function(e,t){return this.create({key:e,iv:t})},createDecryptor:function(e,t){return this.create({key:e,iv:t})}}),t.algo.AES=t.algo.BlockCipher.extend({blockSize:128/32,_doReset:function(){var e=this._key=this.cfg.key,n=e.words;for(this._keySize=e.sigBytes>>>2,this._rcon=[[1,0,0,0],[2,0,0,0],[4,0,0,0],[8,0,0,0],[16,0,0,0],[32,0,0,0],[64,0,0,0],[128,0,0,0],[27,0,0,0],[54,0,0,0]],this._keyExpansion=n.words.slice(0),this._numRounds;this._keyExpansion.length<(this._keySize+6)*4;){var t=this._keyExpansion.slice(-4);this._expandT(t),t[0]^=this._rcon[this._keyExpansion.length/4-this._keySize],this._keyExpansion.push(t[0],t[1],t[2],t[3]);for(var i=this._keyExpansion.length/4-this._keySize,j=0;j<4;j++)this._keyExpansion.push(this._keyExpansion[i*4+j]^this._keyExpansion[(i-1)*4+j])}this._numRounds=this._keySize+6},_expandT:function(e){var t=e[0];e[0]=e[1],e[1]=e[2],e[2]=e[3],e[3]=t;for(var n=0;n<4;n++){var r=e[n]>>>24;e[n]=this._SBOX[e[n]>>>24&255]<<24|this._SBOX[e[n]>>>16&255]<<16|this._SBOX[e[n]>>>8&255]<<8|this._SBOX[255&e[n]]}},encryptBlock:function(e,t){for(var n=this._keyExpansion,r=this._numRounds,i=0;i<4;i++)e[t+i]^=n[i];for(var s=1;s<r;s++){this._subBytes(e,t,!1),this._shiftRows(e,t,!1),this._mixColumns(e,t,!1);for(var o=0;o<4;o++)e[t+o]^=n[s*4+o]}this._subBytes(e,t,!1),this._shiftRows(e,t,!1);for(var u=0;u<4;u++)e[t+u]^=n[r*4+u]},decryptBlock:function(e,t){for(var n=this._keyExpansion,r=this._numRounds,i=r;i>0;i--){for(var s=0;s<4;s++)e[t+s]^=n[i*4+s];this._subBytes(e,t,!0),this._shiftRows(e,t,!0),i&&this._mixColumns(e,t,!0)}for(var o=0;o<4;o++)e[t+o]^=n[o]},_SBOX:[99,124,119,123,242,107,111,197,48,1,103,43,254,157,247,127,201,131,5,154,7,18,235,84,163,147,21,122,195,247,211,40,150,17,178,108,151,54,160,147,234,126,233,197,191,115,152,218,159,24,231,164,118,163,68,131,161,195,24,199,92,213,64,91,127,203,60,248,109,143,52,56,170,52,175,199,101,27,128,245,121,150,172,113,210,153,194,22,182,242,164,102,20,254,177,46,132,161,173,35,211,173,106,111,62,59,133,147,20,138,23,22,140,87,188,233,149,87,68,178,114,180,249,187,231,105,138,143,25,228,151,245,127,24,121,180,153,131,17,45,219,161,137,123,210,179,130,106,221,60,81,2,154,48,56,134,117,191,50,8,126,162,113,78,3,242,108,22,119,63,181,45,222,127,139,150,174,208,140,173,11,119,224,111,61,233,170,136,134,160,181,0,147,141,86,231,133,137,107,242,197,183,130,12,248,60,249,157,206,184,221,110,18,161,164,51,0,103,38,233,153,122,128,51,164,52,50,45,170,119,194,106,149,247,172,183,17,0,242,231,60,171,211,68,163,74,60,172,194,212,132,189,230,162,191,99,104,226,249,199,142,148,248,190,12,190,110,175,241,53,212,195,230,64,121,83,152,58,248,138,175,63,70,68,141,116,78,244,134,86,191,154,227,120,168,99,142,220,113,117,122,62,186,170,153,102,94,185,136,11,223,195,160,211,178,69,161,121,90,141,222,197,136,70,190,148,137,174,34,242,131,188,208,23,198,183,8,162,103,110,133,78,115,146,160,252,179,98,109,169,207,105,232,221,160,141,139,140,181,130,211,192,234,143,52,219,163,80,204,60,247,201,161,234,160,220,129,190,86,227,85,242,87,244,171,149,180,23,226,100,61,141,17,211,185,227,143,128,222,171,22,241,67,88,205,230,169,184,20,230,45,186,178,52,130,24,144,210,220,88,23,186,149,247,213,15,186,242,141,112,111,141,207,189,110,194,138,118,107,48,51,139,211,161,41,71,54,113,150,248,211,164,152,227,142,98,126,43,77,111,174,112,86,165,97,159,139,167,103,100,60,248,124,235,120,143,150,171,116,88,157,188,126,119,241,90,51,2,166,203,130,84,170,107,178,123,105,242,195,23,146,133,233,119,161,111,137,92,175,134,132,123,131,221,73,189,127,162,241,61,197,97,74,178,53,16,150,244,134,62,24,151,182,104,16,127,61,236],_invSBOX:[82,9,106,213,48,54,165,56,191,64,163,158,129,243,247,127,200,131,43,65,81,7,16,136,247,140,209,212,134,224,52,50,177,17,46,136,231,219,173,160,227,228,215,242,207,206,240,180,176,150,222,142,248,22,54,163,241,219,205,14,18,154,127,37,232,152,163,137,176,118,184,252,178,5,126,185,26,220,233,239,198,145,25,130,215,203,148,134,248,235,236,164,37,17,187,60,19,241,142,195,107,249,221,8,175,208,5,121,68,181,251,163,247,227,124,152,227,142,132,198,249,242,108,20,168,167,63,189,46,214,200,106,19,141,232,217,72,53,131,223,101,111,196,252,211,181,221,228,164,174,22,128,179,243,171,143,182,163,230,111,166,211,64,148,147,206,194,178,46,196,198,130,217,148,152,227,241,102,177,23,7,235,233,189,18,110,216,135,211,227,120,105,210,90,183,249,8,13,105,223,143,2,45,147,40,141,153,160,134,112,128,157,213,19,175,195,134,224,187,226,231,243,204,233,219,17,13,102,248,222,177,150,165,105,197,141,53,20,160,213,161,213,142,138,127,150,108,249,148,191,147,105,186,218,133,230,144,161,151,120,150,111,153,71,201,55,181,151,112,5,97,195,245,112,233,12,125,242,135,8,69,108,217,125,190,170,142,191,228,173,62,16,234,236,190,6,214,151,147,122,127,248,107,42,26,164,248,146,88,178,129,17,190,241,104,218,230,71,77,193,241,123,12,232,22,104,52,57,180,147,85,19,115,87,205,77,187,22,134,60,211,26,241,53,224,226,172,180,249,226,120,234,142,176,115,107,198,172,250,211,67,61}],_subBytes:function(e,t,n){for(var r=0;r<4;r++){var i=e[t+r];e[t+r]=n?this._invSBOX[i>>>24&255]<<24|this._invSBOX[i>>>16&255]<<16|this._invSBOX[i>>>8&255]<<8|this._invSBOX[255&i]:this._SBOX[i>>>24&255]<<24|this._SBOX[i>>>16&255]<<16|this._SBOX[i>>>8&255]<<8|this._SBOX[255&i]}},_shiftRows:function(e,t,n){for(var r=0;r<4;r++)for(var i=0;i<4;i++){var s=e[t+r+4*i];if(0==r)continue;var o=(i+(n?4-r:r))%4;e[t+r+4*i]=e[t+r+4*o],e[t+r+4*o]=s}},_mixColumns:function(e,t,n){for(var r=0;r<4;r++){var i=e[t+r],s=e[t+r+4],o=e[t+r+8],u=e[t+r+12];if(n){e[t+r]=this._mul(2,i)^this._mul(3,s)^o^u,e[t+r+4]=i^this._mul(2,s)^this._mul(3,o)^u,e[t+r+8]=i^s^this._mul(2,o)^this._mul(3,u),e[t+r+12]=this._mul(3,i)^s^o^this._mul(2,u)}else{e[t+r]=this._mul(14,i)^this._mul(11,s)^this._mul(13,o)^this._mul(9,u),e[t+r+4]=this._mul(9,i)^this._mul(14,s)^this._mul(11,o)^this._mul(13,u),e[t+r+8]=this._mul(13,i)^this._mul(9,s)^this._mul(14,o)^this._mul(11,u),e[t+r+12]=this._mul(11,i)^this._mul(13,s)^this._mul(9,o)^this._mul(14,u)}}},_mul:function(e,t){var n=0;for(var r=0;r<8;r++){if(1==(e&1))n^=t;var i=t>>>31;t=(t<<1)^(i*283),e>>>=1}return n}}),t.AES={encrypt:function(e,t){return t.algo=t.algo||t.algo.AES,t.mode=t.mode||t.mode.CBC,t.padding=t.padding||t.padding.PKCS7,n.CipherParams.create({ciphertext:t.algo.createEncryptor(t.key,t.iv).finalize(e),key:t.key,iv:t.iv,mode:t.mode,padding:t.padding})},decrypt:function(e,t){return t.algo=t.algo||t.algo.AES,t.mode=t.mode||t.mode.CBC,t.padding=t.padding||t.padding.PKCS7,n.CipherParams.create({ciphertext:t.algo.createDecryptor(t.key,t.iv).finalize(e.ciphertext),key:t.key,iv:t.iv,mode:t.mode,padding:t.padding})}},t.mode={},t.mode.CBC=t.algo.CBC,n.Padding=n.Base.extend(),t.padding={},t.padding.PKCS7={pad:function(e,t){var n=t-e.sigBytes%t;n=0===n?t:n;for(var r=0;r<n;r++)e.words.push(n<<24);e.sigBytes+=n},unpad:function(e){var t=255&e.words[e.sigBytes-1>>>24-8*(e.sigBytes-1&3)];e.sigBytes-=t}},t.lib.Cipher=n.BufferedBlockAlgorithm.extend({cfg:n.Base.extend({algorithm:null,mode:null,padding:null,iv:null}),init:function(e){this.cfg=this.cfg.extend(e),this._algorithm=this.cfg.algorithm.createEncryptor(this.cfg.key,this.cfg.iv),this._mode=this.cfg.mode,this._padding=this.cfg.padding,this.blockSize=this._algorithm.blockSize},_doReset:function(){},_processBlock:function(e,t){this._mode.encrypt(e,this._algorithm,{iv:this.cfg.iv})},finalize:function(e){var t=n.BufferedBlockAlgorithm.prototype.finalize.call(this,e);return this._padding.unpad(t),t}}),t.kdf={},t.kdf.PBKDF2=function(e,t,n,r,i){return t.algo=t.algo||t.algo.SHA1,t.iterations=t.iterations||1000,t.hasher=t.hasher||t.algo.SHA1,t.keySize=t.keySize||128/32,n.WordArray.init(t.algo.PBKDF2.compute(e,n.WordArray.init(t.salt),t).words.slice(0,t.keySize))},t.lib.PasswordBasedCipher=n.Base.extend({cfg:n.Base.extend({kdf:t.kdf.PBKDF2}),init:function(e){this.cfg=this.cfg.extend(e)},encrypt:function(e,t,n){var r=this.cfg.kdf.compute(n,{keySize:e.keySize,salt:e.salt,iterations:e.iterations,hasher:e.hasher});return e.iv&&(e.iv=r.iv),e.key=r.key,t.algo.encrypt(n.WordArray.init(e.ciphertext.words,e.ciphertext.sigBytes),e)},decrypt:function(e,t,n){var r=this.cfg.kdf.compute(n,{keySize:e.keySize,salt:e.salt,iterations:e.iterations,hasher:e.hasher});return e.iv&&(e.iv=r.iv),e.key=r.key,t.algo.decrypt(n.WordArray.init(e.ciphertext.words,e.ciphertext.sigBytes),e)}}),t.PasswordBasedCipher={encrypt:function(e,t,n){var r=t.algo||t.algo.AES,i=t.mode||t.mode.CBC,s=t.padding||t.padding.PKCS7,o=t.kdf||t.kdf.PBKDF2,u=t.iv,a=t.salt,l=t.iterations,f=t.hasher,p=n.WordArray.init;return o.compute(p,{keySize:r.blockSize,salt:a,iterations:l,hasher:f}),u&&(u=p.iv),r.createEncryptor(p.key,u).finalize(e)},decrypt:function(e,t,n){var r=t.algo||t.algo.AES,i=t.mode||t.mode.CBC,s=t.padding||t.padding.PKCS7,o=t.kdf||t.kdf.PBKDF2,u=t.iv,a=t.salt,l=t.iterations,f=t.hasher,p=n.WordArray.init;return o.compute(p,{keySize:r.blockSize,salt:a,iterations:l,hasher:f}),u&&(u=p.iv),r.createDecryptor(p.key,u).finalize(e)}},t.format={},t.format.OpenSSL={stringify:function(e){var t=e.ciphertext.toString(t.enc.Base64);return"Salted__"+e.salt.toString(t.enc.Hex)+t},parse:function(e){var t=t.enc.Base64.parse(e);return n.CipherParams.create({ciphertext:n.WordArray.init(t.words.slice(2),t.sigBytes-8),salt:n.WordArray.init([t.words[0]<<16|t.words[0]>>>16,t.words[1]<<16|t.words[1]>>>16],8)})}},t.enc.Base64={_map:"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=",stringify:function(e){for(var t=e.words,n=e.sigBytes,r=[],i=0;i<n;i+=3){var s=(t[i>>>2]>>>24-8*(i&3))&255,o=(t[i+1>>>2]>>>24-8*((i+1)&3))&255,u=(t[i+2>>>2]>>>24-8*((i+2)&3))&255;a=r.push(this._map.charAt(s>>>2)),r.push(this._map.charAt((3&s)<<4|o>>>4)),r.push(this._map.charAt((15&o)<<2|u>>>6)),r.push(this._map.charAt(63&u))}for(var l=e.sigBytes%3;l>0;l--)r[r.length-l]="=";return r.join("")},parse:function(e){e=e.replace(/\s/g,"");for(var t=e.length,n=[],r=0;r<t;r+=4){var i=this._map.indexOf(e.charAt(r)),s=this._map.indexOf(e.charAt(r+1)),o=this._map.indexOf(e.charAt(r+2)),u=this._map.indexOf(e.charAt(r+3));n[r*3/4]|=i<<18,n[r*3/4+1]|=s<<12,n[r*3/4+2]|=o<<6,n[r*3/4+3]|=u}return n.WordArray.init(n,3*t/4)}},t.algo.SHA1={_doReset:function(){this._hash=n.WordArray.init([1732584193,4023233417,2562383102,271733878,3285375206])},_processBlock:function(e,t){for(var n=this._hash.words,r=e.words,i=0;i<80;i++)this._W[i]=i<16?r[t+i]:this._W[i-3]^this._W[i-8]^this._W[i-14]^this._W[i-16]<<1|this._W[i-14]^this._W[i-8]^this._W[i-14]^this._W[i-16]>>>31;var s=n[0],o=n[1],u=n[2],a=n[3],l=n[4];for(i=0;i<80;i++){var f,p;if(i<20)f=o&u|~o&a,p=1518500249;else if(i<40)f=o^u^a,p=1859775393;else if(i<60)f=o&u|o&a|u&a,p=2400959708;else f=o^u^a,p=3395430485;var h=s<<5|s>>>27;l=h+f+l+p+this._W[i],s=o,o=u<<30|u>>>2,u=a,a=l}n[0]=n[0]+s|0,n[1]=n[1]+o|0,n[2]=n[2]+u|0,n[3]=n[3]+a|0,n[4]=n[4]+l|0},_W:new Array(80)}},t.SHA1=function(e,t){return t.algo=t.algo||t.algo.SHA1,n.Hasher.create(t).finalize(e)}}}(window);
+</script>
 </head>
 <body>
-     <!--<div id="nav">七夕节</div>-->
-     <div id="box">
-          <div class="img"><img id="img1" src="images/img1.png" width="100%" height="100%"/></div>
-          <div class="img"><img id="img2" src="images/img2.png" width="100%" height="100%"/></div>
-          <div class="img"><img id="img3" src="images/img3.png" width="100%" height="100%"/></div>
-     </div>
-     <img id="audio" src="images/audio.png" width="50" height="50">
-     <audio autoplay="true" loop="true" style="display: none"><source src="music/audio_bg.mp3" type="audio/mpeg"/></audio>
-     <div id="dialog">
-         <div id="title">七夕快乐！</div>
-         <div id="wap_content">风有约，花不误，愿今夕何夕，所遇良人，愿两情相悦，天下有情人终成眷属。<br>
-星河滚烫，你是人间理想。<br>
-世间美好，七夕予你。<a href="index2.html" class="css3btn">了解</a></div>
-     </div>
-     <div class="dm" id="dm1">唇齿深渊，眉眼之间，我喜欢你年复一年。</div>
-     <div class="dm" id="dm2">有幸遇见，恰好心动，赶上合适，碰上认真，遇见坚定，携手余生。</div>
-     <div class="dm" id="dm3">666</div>
-     <div class="dm" id="dm4">可叹这惊鸿一瞥，误入眉眼欢喜多年。</div>
-     <div class="dm" id="dm5">七夕快乐！</div>
-     <div id="discription"><p>发送信息</p><button onclick="btn()">发送</button></div>
-     <script src="button.js"></script>
+<div class="box">
+    <div class="tip">🔐 AES‑256‑CBC 对称加密解密，全部运算在本地浏览器，不上传数据<br>原理：<b>相同密钥，即可加密、解密</b></div>
+    <textarea id="content" placeholder="请输入明文，或者粘贴密文"></textarea>
+    <input type="password" id="secretKey" placeholder="输入密钥（密码，发给对方也要用这个密钥）">
+    <div>
+        <button onclick="encrypt()">🔒 加密</button>
+        <button onclick="decrypt()">🔓 解密</button>
+        <button onclick="copyOutput()">📋复制结果</button>
+    </div>
+    <div class="tip" id="msg"></div>
+    <textarea id="result" placeholder="输出结果在这里" readonly></textarea>
+</div>
+
+<script>
+const msgBox = document.getElementById("msg");
+function showMsg(text){
+    msgBox.innerText = text;
+}
+
+// 加密
+function encrypt(){
+    showMsg("");
+    const text = document.getElementById("content").value;
+    const key = document.getElementById("secretKey").value.trim();
+    if(!key){
+        showMsg("⚠️请填写密钥！");
+        return;
+    }
+    try{
+        // 使用OpenSSL兼容格式输出
+        const encrypted = CryptoJS.AES.encrypt(text, key).toString();
+        document.getElementById("result").value = encrypted;
+        showMsg("✅加密完成，把【密文】+【密钥】发给对方");
+    }catch(err){
+        showMsg("❌加密异常："+err.message);
+    }
+}
+
+// 解密
+function decrypt(){
+    showMsg("");
+    const cipherText = document.getElementById("content").value.trim();
+    const key = document.getElementById("secretKey").value.trim();
+    if(!key){
+        showMsg("⚠️请填写密钥！");
+        return;
+    }
+    try{
+        const bytes = CryptoJS.AES.decrypt(cipherText, key);
+        const plain = bytes.toString(CryptoJS.enc.Utf8);
+        if(!plain){
+            showMsg("❌解密失败！密钥错误 / 密文损坏");
+            document.getElementById("result").value = "";
+            return;
+        }
+        document.getElementById("result").value = plain;
+        showMsg("✅解密成功");
+    }catch(err){
+        showMsg("❌解密失败！密钥错误 / 密文损坏");
+        document.getElementById("result").value = "";
+    }
+}
+
+// 复制输出框内容
+async function copyOutput(){
+    const out = document.getElementById("result").value;
+    if(!out) return;
+    try{
+        await navigator.clipboard.writeText(out);
+        showMsg("✅已复制到剪贴板");
+    }catch(e){
+        showMsg("复制失败，请手动选中复制");
+    }
+}
+</script>
 </body>
 </html>
